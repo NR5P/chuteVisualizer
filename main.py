@@ -1,18 +1,15 @@
 import pyrealsense2.pyrealsense2 as rs
 import numpy as np
 import cv2
-from display import Display
 
 VID_HEIGHT = 480
 VID_WIDTH = 640
 
-display = Display(VID_HEIGHT)
 
 # Create a pipeline
 pipeline = rs.pipeline()
 
 #Create a config and configure the pipeline to stream
-#  different resolutions of color and depth streams
 config = rs.config()
 config.enable_stream(rs.stream.depth, VID_WIDTH, VID_HEIGHT, rs.format.z16, 30)
 config.enable_stream(rs.stream.color, VID_WIDTH, VID_HEIGHT, rs.format.bgr8, 30)
@@ -25,16 +22,30 @@ depth_sensor = profile.get_device().first_depth_sensor()
 depth_scale = depth_sensor.get_depth_scale()
 print("Depth Scale is: " , depth_scale)
 
-# We will be removing the background of objects more than
-#  clipping_distance_in_meters meters away
+# remove objects over certain distance
 clipping_distance_in_meters = 1 #1 meter
 clipping_distance = clipping_distance_in_meters / depth_scale
 
-# Create an align object
-# rs.align allows us to perform alignment of depth frames to others frames
-# The "align_to" is the stream type to which we plan to align depth frames.
+# Create an align object, align images
 align_to = rs.stream.color
 align = rs.align(align_to)
+
+# create buttons on right of image
+buttonImg = np.zeros((VID_HEIGHT, 200, 3), np.uint8)
+half = int(VID_HEIGHT/2)
+buttonImg[...] = 255
+buttonImg[half-5:half+5,:,:] = 0
+cv2.putText(buttonImg, 'Capture',(25,int(half/2)),cv2.FONT_HERSHEY_PLAIN, 2,(0),3)
+cv2.putText(buttonImg, 'Area',(25,int(half/2+30)),cv2.FONT_HERSHEY_PLAIN, 2,(0),3)
+cv2.putText(buttonImg, 'Trigger',(25,int(half*1.5)),cv2.FONT_HERSHEY_PLAIN, 2,(0),3)
+cv2.putText(buttonImg, 'Area',(25,int(half*1.5+30)),cv2.FONT_HERSHEY_PLAIN, 2,(0),3)
+cv2.setMouseCallback('Control',process_click)
+
+def process_click(event, x, y, flags, params):
+    pass
+
+def handleButtonPress(button):
+    pass
 
 def preProcessing(img):
     gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -45,6 +56,13 @@ def preProcessing(img):
     preproc_img = cv2.erode(dilated,kernel,iterations=1)
 
     return preproc_img
+
+
+def display(image):
+    imgWithButtons = np.hstack((image,buttonImg))
+    cv2.namedWindow("chute visializer", cv2.WINDOW_AUTOSIZE)
+    cv2.imshow("chute visializer", imgWithButtons)
+
 
 
 try:
@@ -76,7 +94,7 @@ try:
         contours, hierarchy = cv2.findContours(threshold_img,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
         #cv2.imshow('threshold', threshold_img)
 
-        display.display(color_image)
+        display(color_image)
 
         # Render images
         depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)

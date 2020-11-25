@@ -31,6 +31,13 @@ class Display():
         align_to = rs.stream.color
         self.align = rs.align(align_to)
 
+        self.createButtons()
+
+        cv2.namedWindow("chute", cv2.WINDOW_AUTOSIZE)
+        cv2.setMouseCallback("chute",self.process_click)
+
+
+    def createButtons(self):
         # create buttons on right of image
         self.buttonImg = np.zeros((self.VID_HEIGHT, 200, 3), np.uint8)
         half = int(self.VID_HEIGHT/2)
@@ -40,10 +47,20 @@ class Display():
         cv2.putText(self.buttonImg, 'Area',(25,int(half/2+30)),cv2.FONT_HERSHEY_PLAIN, 2,(0),3)
         cv2.putText(self.buttonImg, 'Trigger',(25,int(half*1.5)),cv2.FONT_HERSHEY_PLAIN, 2,(0),3)
         cv2.putText(self.buttonImg, 'Area',(25,int(half*1.5+30)),cv2.FONT_HERSHEY_PLAIN, 2,(0),3)
-        cv2.setMouseCallback('Control',self.process_click)
 
     def process_click(self, event, x, y, flags, params):
-        pass
+        if event == cv2.EVENT_LBUTTONDOWN:
+            if x > self.VID_WIDTH and y < self.VID_HEIGHT / 2:
+                self.handleCaptureAreaButton()
+            if x > self.VID_WIDTH and y > self.VID_HEIGHT / 2:
+                self.handleTriggerAreaButton()
+
+
+    def handleCaptureAreaButton(self):
+        print("capture area")
+
+    def handleTriggerAreaButton(self):
+        print("trigger area")
 
     def handleButtonPress(self, button):
         pass
@@ -60,8 +77,7 @@ class Display():
 
     def display(self, image):
         imgWithButtons = np.hstack((image,self.buttonImg))
-        cv2.namedWindow("chute visializer", cv2.WINDOW_AUTOSIZE)
-        cv2.imshow("chute visializer", imgWithButtons)
+        cv2.imshow("chute", imgWithButtons)
 
     def displayLoop(self):
         try:

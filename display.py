@@ -6,6 +6,8 @@ class Display():
     def __init__(self):
         self.VID_HEIGHT = 480
         self.VID_WIDTH = 640
+        self.triggerBtnPressed = False
+        self.captureBtnPressed = False
 
         # Create a pipeline
         self.pipeline = rs.pipeline()
@@ -40,13 +42,8 @@ class Display():
     def createButtons(self):
         # create buttons on right of image
         self.buttonImg = np.zeros((self.VID_HEIGHT, 200, 3), np.uint8)
-        half = int(self.VID_HEIGHT/2)
         self.buttonImg[...] = 255
-        self.buttonImg[half-5:half+5,:,:] = 0
-        cv2.putText(self.buttonImg, 'Capture',(25,int(half/2)),cv2.FONT_HERSHEY_PLAIN, 2,(0),3)
-        cv2.putText(self.buttonImg, 'Area',(25,int(half/2+30)),cv2.FONT_HERSHEY_PLAIN, 2,(0),3)
-        cv2.putText(self.buttonImg, 'Trigger',(25,int(half*1.5)),cv2.FONT_HERSHEY_PLAIN, 2,(0),3)
-        cv2.putText(self.buttonImg, 'Area',(25,int(half*1.5+30)),cv2.FONT_HERSHEY_PLAIN, 2,(0),3)
+        self.setBtnColor()
 
     def process_click(self, event, x, y, flags, params):
         if event == cv2.EVENT_LBUTTONDOWN:
@@ -55,12 +52,32 @@ class Display():
             if x > self.VID_WIDTH and y > self.VID_HEIGHT / 2:
                 self.handleTriggerAreaButton()
 
+    def setBtnColor(self):
+        half = int(self.VID_HEIGHT/2)
+        if self.captureBtnPressed:
+            self.buttonImg[0:int(self.VID_HEIGHT/2),:,:] = 100
+        else:
+            self.buttonImg[0:int(self.VID_HEIGHT/2),:,:] = 255
+        if self.triggerBtnPressed:
+            self.buttonImg[int(self.VID_HEIGHT/2):self.VID_HEIGHT,:,:] = 100
+        else:
+            self.buttonImg[int(self.VID_HEIGHT/2):self.VID_HEIGHT,:,:] = 255
+        self.buttonImg[half-5:half+5,:,:] = 0
+        cv2.putText(self.buttonImg, 'Capture',(25,int(half/2)),cv2.FONT_HERSHEY_PLAIN, 2,(0),3)
+        cv2.putText(self.buttonImg, 'Area',(25,int(half/2+30)),cv2.FONT_HERSHEY_PLAIN, 2,(0),3)
+        cv2.putText(self.buttonImg, 'Trigger',(25,int(half*1.5)),cv2.FONT_HERSHEY_PLAIN, 2,(0),3)
+        cv2.putText(self.buttonImg, 'Area',(25,int(half*1.5+30)),cv2.FONT_HERSHEY_PLAIN, 2,(0),3)
+
+
+
 
     def handleCaptureAreaButton(self):
-        print("capture area")
+        self.captureBtnPressed = not self.captureBtnPressed
+        self.setBtnColor()
 
     def handleTriggerAreaButton(self):
-        print("trigger area")
+        self.triggerBtnPressed = not self.triggerBtnPressed
+        self.setBtnColor()
 
     def handleButtonPress(self, button):
         pass

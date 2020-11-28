@@ -49,8 +49,18 @@ class Display():
         if event == cv2.EVENT_LBUTTONDOWN:
             if x > self.VID_WIDTH and y < self.VID_HEIGHT / 2:
                 self.handleCaptureAreaButton()
-            if x > self.VID_WIDTH and y > self.VID_HEIGHT / 2:
+            elif x > self.VID_WIDTH and y > self.VID_HEIGHT / 2:
                 self.handleTriggerAreaButton()
+            elif x < self.VID_WIDTH and self.triggerBtnPressed:
+                self.handleTriggerAreaBox()
+            elif x < self.VID_WIDTH and self.captureBtnPressed:
+                self.handleCaptureAreaBox()
+
+    def handleTriggerAreaBox(self):
+        pass
+
+    def handleCaptureAreaBox(self):
+        pass
 
     def setBtnColor(self):
         half = int(self.VID_HEIGHT/2)
@@ -68,14 +78,13 @@ class Display():
         cv2.putText(self.buttonImg, 'Trigger',(25,int(half*1.5)),cv2.FONT_HERSHEY_PLAIN, 2,(0),3)
         cv2.putText(self.buttonImg, 'Area',(25,int(half*1.5+30)),cv2.FONT_HERSHEY_PLAIN, 2,(0),3)
 
-
-
-
     def handleCaptureAreaButton(self):
+        self.triggerBtnPressed = False
         self.captureBtnPressed = not self.captureBtnPressed
         self.setBtnColor()
 
     def handleTriggerAreaButton(self):
+        self.captureBtnPressed = False
         self.triggerBtnPressed = not self.triggerBtnPressed
         self.setBtnColor()
 

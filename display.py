@@ -1,6 +1,6 @@
 import pyrealsense2.pyrealsense2 as rs
 import numpy as np
-import cv2
+import cv2, time
 
 class Display():
     def __init__(self):
@@ -8,6 +8,9 @@ class Display():
         self.VID_WIDTH = 640
         self.triggerBtnPressed = False
         self.captureBtnPressed = False
+        self.captureAreaBox = [0] * 2
+        self.triggerAreaBox = [0] * 2
+        self.rectangleStarted = False
 
         # Create a pipeline
         self.pipeline = rs.pipeline()
@@ -23,7 +26,6 @@ class Display():
         # Getting the depth sensor's depth scale (see rs-align example for explanation)
         depth_sensor = profile.get_device().first_depth_sensor()
         depth_scale = depth_sensor.get_depth_scale()
-        print("Depth Scale is: " , depth_scale)
 
         # remove objects over certain distance
         clipping_distance_in_meters = 1 #1 meter
@@ -46,21 +48,24 @@ class Display():
         self.setBtnColor()
 
     def process_click(self, event, x, y, flags, params):
+        if x > self.VID_WIDTH and y < self.VID_HEIGHT / 2 and event == cv2.EVENT_LBUTTONDOWN:
+            self.handleCaptureAreaButton()
+        elif x > self.VID_WIDTH and y > self.VID_HEIGHT / 2 and event == cv2.EVENT_LBUTTONDOWN:
+            self.handleTriggerAreaButton()
+        elif x < self.VID_WIDTH and self.triggerBtnPressed:
+            self.handleRectangleDraw(event, x, y, self.triggerAreaBox)
+        elif x < self.VID_WIDTH and self.captureBtnPressed:
+            self.handleRectangleDraw(event, x, y, self.captureAreaBox)
+
+    def handleRectangleDraw(self, event, x, y, captureBox):
         if event == cv2.EVENT_LBUTTONDOWN:
-            if x > self.VID_WIDTH and y < self.VID_HEIGHT / 2:
-                self.handleCaptureAreaButton()
-            elif x > self.VID_WIDTH and y > self.VID_HEIGHT / 2:
-                self.handleTriggerAreaButton()
-            elif x < self.VID_WIDTH and self.triggerBtnPressed:
-                self.handleTriggerAreaBox()
-            elif x < self.VID_WIDTH and self.captureBtnPressed:
-                self.handleCaptureAreaBox()
-
-    def handleTriggerAreaBox(self):
-        pass
-
-    def handleCaptureAreaBox(self):
-        pass
+            self.rectangleStarted = True
+            captureBox[0] = (x,y)
+        elif event == cv2.EVENT_LBUTTONUP:
+            self.rectangleStarted = False
+            captureBox[1] = (x,y)
+        elif event == cv2.EVENT_MOUSEMOVE and self.rectangleStarted:
+            captureBox[1] = (x,y)
 
     def setBtnColor(self):
         half = int(self.VID_HEIGHT/2)
@@ -81,11 +86,15 @@ class Display():
     def handleCaptureAreaButton(self):
         self.triggerBtnPressed = False
         self.captureBtnPressed = not self.captureBtnPressed
+        if self.captureBtnPressed == True:
+            self.captureAreaBox = [0] * 2
         self.setBtnColor()
 
     def handleTriggerAreaButton(self):
         self.captureBtnPressed = False
         self.triggerBtnPressed = not self.triggerBtnPressed
+        if self.triggerBtnPressed == True:
+            self.triggerAreaBox = [0] * 2
         self.setBtnColor()
 
     def handleButtonPress(self, button):
@@ -103,6 +112,10 @@ class Display():
 
     def display(self, image):
         imgWithButtons = np.hstack((image,self.buttonImg))
+        if self.captureAreaBox[0] != 0 and self.captureAreaBox[1] != 0:
+            cv2.rectangle(imgWithButtons, self.captureAreaBox[0], self.captureAreaBox[1], (0,255,0), thickness=1) 
+        if self.triggerAreaBox[0] != 0 and self.triggerAreaBox[1] != 0:
+            cv2.rectangle(imgWithButtons, self.triggerAreaBox[0], self.triggerAreaBox[1], (0,0,255), thickness=1) 
         cv2.imshow("chute", imgWithButtons)
 
     def displayLoop(self):

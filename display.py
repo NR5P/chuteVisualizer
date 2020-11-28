@@ -63,6 +63,8 @@ class Display():
             captureBox[0] = (x,y)
         elif event == cv2.EVENT_LBUTTONUP:
             self.rectangleStarted = False
+            self.triggerBtnPressed = self.captureBtnPressed = False
+            self.setBtnColor()
             captureBox[1] = (x,y)
         elif event == cv2.EVENT_MOUSEMOVE and self.rectangleStarted:
             captureBox[1] = (x,y)

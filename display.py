@@ -137,8 +137,6 @@ class Display():
         if self.triggerAreaBox[0] != 0 and self.triggerAreaBox[1] != 0:
             cv2.rectangle(imgWithButtons, self.triggerAreaBox[0], self.triggerAreaBox[1], (0,0,255), thickness=1) 
         cv2.imshow("chute", imgWithButtons)
-        print(rs.pointcloud())
-
 
     def displayLoop(self):
         try:

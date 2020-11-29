@@ -10,7 +10,9 @@ class Display():
         self.captureBtnPressed = False
         self.captureAreaBox = [0] * 2
         self.triggerAreaBox = [0] * 2
+        self.lastImg = None
         self.rectangleStarted = False
+        self.clipping_distance = 1 # clipping distance in meters
 
         # Create a pipeline
         self.pipeline = rs.pipeline()
@@ -42,7 +44,6 @@ class Display():
 
 
     def createButtons(self):
-        # create buttons on right of image
         self.buttonImg = np.zeros((self.VID_HEIGHT, 200, 3), np.uint8)
         self.buttonImg[...] = 255
         self.setBtnColor()
@@ -68,6 +69,23 @@ class Display():
             captureBox[1] = (x,y)
         elif event == cv2.EVENT_MOUSEMOVE and self.rectangleStarted:
             captureBox[1] = (x,y)
+
+    def detectMotion(self, currImg, lastImg):
+        if self.triggerAreaBox[0] != 0 and self.triggerAreaBox[1] != 0 and self.rectangleStarted == False:
+            xStart = self.triggerAreaBox[0][0]
+            yStart = self.triggerAreaBox[0][1]
+            xEnd = self.triggerAreaBox[1][0]
+            yEnd = self.triggerAreaBox[1][1]
+            width = xEnd - xStart
+            height = yEnd - yStart
+            triggerAreaImg = currImg[yStart:yStart + width,xStart:xStart + width]
+            lastImg = lastImg[yStart:yStart + width,xStart:xStart + width]
+            frameDelta = cv2.absdiff(triggerAreaImg, lastImg)
+            self.lastImg = currImg
+            if np.average(frameDelta) > 5:
+                return True
+        else:
+            self.lastImg = currImg
 
     def setBtnColor(self):
         half = int(self.VID_HEIGHT/2)
@@ -140,15 +158,19 @@ class Display():
 
                 depth_image = np.asanyarray(aligned_depth_frame.get_data())
                 color_image = np.asanyarray(color_frame.get_data())
+                motionDetected = self.detectMotion(color_image, self.lastImg)
+                if motionDetected == True:
+                    print("movement")
 
                 # Remove background - Set pixels further than clipping_distance to grey
                 white_color = 255
                 depth_image_3d = np.dstack((depth_image,depth_image,depth_image)) #depth image is 1 channel, color is 3 channels
                 bg_removed = np.where((depth_image_3d > self.clipping_distance) | (depth_image_3d <= 0), white_color, color_image)
 
-                threshold_img = self.preProcessing(bg_removed)
-                contours, hierarchy = cv2.findContours(threshold_img,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
+                #threshold_img = self.preProcessing(bg_removed)
+                #contours, hierarchy = cv2.findContours(threshold_img,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
                 #cv2.imshow('threshold', threshold_img)
+                #cv2.imshow('threshold', bg_removed)
 
                 self.display(color_image)
 

@@ -130,13 +130,17 @@ class Display():
 
         return preproc_img
 
-    def display(self, image):
-        imgWithButtons = np.hstack((image,self.buttonImg))
+    def display(self, image, bgRemoved, depthImage):
+        blankImage = np.zeros((self.VID_HEIGHT,self.VID_WIDTH,3), np.uint8)
+        blankImageButtons = np.zeros((self.VID_HEIGHT,200,3), np.uint8)
+        imgWithButtons = np.hstack((image,bgRemoved,self.buttonImg))
+        bottomImages = np.hstack((depthImage,blankImage,blankImageButtons))
+        entireScreen = np.vstack((imgWithButtons, bottomImages))
         if self.captureAreaBox[0] != 0 and self.captureAreaBox[1] != 0:
-            cv2.rectangle(imgWithButtons, self.captureAreaBox[0], self.captureAreaBox[1], (0,255,0), thickness=1) 
+            cv2.rectangle(entireScreen, self.captureAreaBox[0], self.captureAreaBox[1], (0,255,0), thickness=1) 
         if self.triggerAreaBox[0] != 0 and self.triggerAreaBox[1] != 0:
-            cv2.rectangle(imgWithButtons, self.triggerAreaBox[0], self.triggerAreaBox[1], (0,0,255), thickness=1) 
-        cv2.imshow("chute", imgWithButtons)
+            cv2.rectangle(entireScreen, self.triggerAreaBox[0], self.triggerAreaBox[1], (0,0,255), thickness=1) 
+        cv2.imshow("chute", entireScreen)
 
     def displayLoop(self):
         try:
@@ -163,19 +167,20 @@ class Display():
                     print("movement")
 
                 # Remove background - Set pixels further than clipping_distance to grey
-                white_color = 255
                 depth_image_3d = np.dstack((depth_image,depth_image,depth_image)) #depth image is 1 channel, color is 3 channels
+                white_color = 255
                 bg_removed = np.where((depth_image_3d > self.clipping_distance) | (depth_image_3d <= 0), white_color, color_image)
+
+                depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
 
                 #threshold_img = self.preProcessing(bg_removed)
                 #contours, hierarchy = cv2.findContours(threshold_img,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
                 #cv2.imshow('threshold', threshold_img)
                 #cv2.imshow('threshold', bg_removed)
 
-                self.display(color_image)
+                self.display(color_image, bg_removed, depth_colormap)
 
                 # Render images
-                #depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
                 #cv2.drawContours(color_image, contours, -1, (0,255,0), 3)
                 #images = np.hstack((color_image, depth_colormap))
                 #cv2.namedWindow('Align Example', cv2.WINDOW_AUTOSIZE)

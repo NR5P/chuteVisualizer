@@ -30,8 +30,7 @@ class Display():
         depth_scale = depth_sensor.get_depth_scale()
 
         # remove objects over certain distance
-        clipping_distance_in_meters = 1 #1 meter
-        self.clipping_distance = clipping_distance_in_meters / depth_scale
+        self.clipping_distance = self.clipping_distance / depth_scale
 
         # Create an align object, align images
         align_to = rs.stream.color

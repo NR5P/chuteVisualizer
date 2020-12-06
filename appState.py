@@ -15,7 +15,6 @@ class AppState:
         self.mouse_btns = [False, False, False]
         self.paused = False
         self.decimate = 1
-        self.scale = True
         self.color = True
 
     def reset(self):

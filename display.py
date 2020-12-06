@@ -15,7 +15,9 @@ class Display():
         self.rectangleStarted = False
         self.clipping_distance = 1 # clipping distance in meters
         self.state = AppState()
+        self.displayPointCloud = False
         self.pointCloudImage = np.zeros((self.VID_HEIGHT,self.VID_WIDTH,3), np.uint8)
+        self.blankImage = np.zeros((self.VID_HEIGHT,self.VID_WIDTH,3), np.uint8)
 
         # Create a pipeline
         self.pipeline = rs.pipeline()
@@ -173,26 +175,8 @@ class Display():
         return proj
 
 
-    def view(self,v):
-        """apply view transformation on vector array"""
-        return np.dot(v - self.state.pivot, self.state.rotation) + self.state.pivot - self.state.translation
-
-
-    def pointcloud(self, out, verts, texcoords, color, painter=True):
-        """draw point cloud with optional painter's algorithm"""
-        if painter:
-            # Painter's algo, sort points from back to front
-
-            # get reverse sorted indices by z (in view-space)
-            # https://gist.github.com/stevenvo/e3dad127598842459b68
-            v = self.view(verts)
-            s = v[:, 2].argsort()[::-1]
-            proj = self.project(v[s])
-        else:
-            proj = self.project(self.view(verts))
-
-        if self.state.scale:
-            proj *= 0.5**self.state.decimate
+    def pointcloud(self, out, verts, texcoords, color):
+        proj = self.project(verts)
 
         h, w = out.shape[:2]
 
@@ -205,13 +189,8 @@ class Display():
         m = im & jm
 
         cw, ch = color.shape[:2][::-1]
-        if painter:
-            # sort texcoord with same indices as above
-            # texcoords are [0..1] and relative to top-left pixel corner,
-            # multiply by size and add 0.5 to center
-            v, u = (texcoords[s] * (cw, ch) + 0.5).astype(np.uint32).T
-        else:
-            v, u = (texcoords * (cw, ch) + 0.5).astype(np.uint32).T
+
+        v, u = (texcoords * (cw, ch) + 0.5).astype(np.uint32).T
         # clip texcoords to image
         np.clip(u, 0, ch-1, out=u)
         np.clip(v, 0, cw-1, out=v)
@@ -235,19 +214,10 @@ class Display():
         verts = np.asanyarray(v).view(np.float32).reshape(-1, 3)  # xyz
         texcoords = np.asanyarray(t).view(np.float32).reshape(-1, 2)  # uv
 
-        now = time.time()
         self.pointCloudImage.fill(0)
 
-        if not self.state.scale or pointCloudImage.shape[:2] == (self.h, self.w):
-            self.pointcloud(pointCloudImage, verts, texcoords, color_source)
-        else:
-            tmp = np.zeros((h, w, 3), dtype=np.uint8)
-            self.pointcloud(tmp, verts, texcoords, color_source)
-            tmp = cv2.resize(
-                tmp, pointCloudImage.shape[:2][::-1], interpolation=cv2.INTER_NEAREST)
-            np.putmask(pointCloudImage, tmp > 0, tmp)
+        self.pointcloud(pointCloudImage, verts, texcoords, color_source)
 
-        dt = time.time() - now
         return pointCloudImage
 
 
@@ -281,8 +251,11 @@ class Display():
                 bg_removed = np.where((depth_image_3d > self.clipping_distance) | (depth_image_3d <= 0), white_color, color_image)
 
                 depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
-
-                self.pointCloudImage = self.getPointCloudImage(color_image ,color_frame ,aligned_depth_frame, self.pointCloudImage)
+                    
+                if self.displayPointCloud:
+                    self.pointCloudImage = self.getPointCloudImage(bg_removed ,color_frame ,aligned_depth_frame, self.pointCloudImage)
+                else:
+                    self.pointCloudImage = self.blankImage
                 self.display(color_image, bg_removed, depth_colormap, self.pointCloudImage)
 
                 key = cv2.waitKey(1)
@@ -290,5 +263,7 @@ class Display():
                 if key & 0xFF == ord('q') or key == 27:
                     cv2.destroyAllWindows()
                     break
+                elif key & 0xFF == ord('p') or key == 26:
+                    self.displayPointCloud = not self.displayPointCloud
         finally:
             self.pipeline.stop()

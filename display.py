@@ -220,6 +220,26 @@ class Display():
 
         return pointCloudImage
         
+    def getRoiAndResize(self, image):            
+        try:
+            captureWidthStart = self.captureAreaBox[0][0]
+            captureHeightStart = self.captureAreaBox[0][1]
+            captureWidth = self.captureAreaBox[1][0] - captureWidthStart
+            captureHeight = self.captureAreaBox[1][1] - captureHeightStart
+            roiImage = image[captureWidthStart:captureWidth,captureHeightStart:captureHeight]
+
+            r = self.VID_WIDTH / float(captureWidth)
+            dim = (self.VID_WIDTH, int(captureHeight * r))
+            print(self.VID_HEIGHT-captureHeight)
+            #roiImage = cv2.resize(roiImage,dim,interpolation=cv2.INTER_AREA)
+            #roiImage = cv2.copyMakeBorder(roiImage, 0, 0, 0, 0, cv2.BORDER_CONSTANT)
+            returnImage = self.blankImage
+            returnImage[captureWidthStart:captureWidth,captureHeightStart:captureHeight] = image[captureWidthStart:captureWidth,captureHeightStart:captureHeight]
+            return returnImage
+        except Exception as e:
+            print(e)
+            return self.blankImage
+
 
 
     def displayLoop(self):
@@ -257,7 +277,7 @@ class Display():
                     self.pointCloudImage = self.getPointCloudImage(bg_removed ,color_frame ,aligned_depth_frame, self.pointCloudImage)
                 else:
                     self.pointCloudImage = self.blankImage
-                self.display(color_image, bg_removed, depth_colormap, self.pointCloudImage)
+                self.display(color_image, self.getRoiAndResize(bg_removed), depth_colormap, self.pointCloudImage)
 
                 key = cv2.waitKey(1)
                 # Press esc or 'q' to close the image window

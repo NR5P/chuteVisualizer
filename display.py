@@ -1,7 +1,6 @@
 import pyrealsense2.pyrealsense2 as rs
 import numpy as np
 import cv2, time
-from appState import AppState
 
 class Display():
     def __init__(self):
@@ -14,8 +13,9 @@ class Display():
         self.lastImg = None
         self.rectangleStarted = False
         self.clipping_distance = 1 # clipping distance in meters
-        self.state = AppState()
         self.displayPointCloud = False
+        self.pointCloudDecimate = 1
+        self.pointCloudColor = True
         self.pointCloudImage = np.zeros((self.VID_HEIGHT,self.VID_WIDTH,3), np.uint8)
         self.blankImage = np.zeros((self.VID_HEIGHT,self.VID_WIDTH,3), np.uint8)
 
@@ -55,7 +55,7 @@ class Display():
         # Processing blocks
         self.pc = rs.pointcloud()
         decimate = rs.decimation_filter()
-        decimate.set_option(rs.option.filter_magnitude, 2 ** self.state.decimate)
+        decimate.set_option(rs.option.filter_magnitude, 2 ** self.pointCloudDecimate)
         self.colorizer = rs.colorizer()
 
 
@@ -202,7 +202,7 @@ class Display():
     def getPointCloudImage(self,colorImage,colorFrame,depthFrame,pointCloudImage):
         depth_colormap = np.asanyarray(
             self.colorizer.colorize(depthFrame).get_data())
-        if self.state.color:
+        if self.pointCloudColor:
             mapped_frame, color_source = colorFrame, colorImage
         else:
             mapped_frame, color_source = depthFrame, depth_colormap
@@ -219,6 +219,7 @@ class Display():
         self.pointcloud(pointCloudImage, verts, texcoords, color_source)
 
         return pointCloudImage
+        
 
 
     def displayLoop(self):
@@ -260,10 +261,11 @@ class Display():
 
                 key = cv2.waitKey(1)
                 # Press esc or 'q' to close the image window
+                # Press p to toggle point cloud
                 if key & 0xFF == ord('q') or key == 27:
                     cv2.destroyAllWindows()
                     break
-                elif key & 0xFF == ord('p') or key == 26:
+                elif key & 0xFF == ord('p'):
                     self.displayPointCloud = not self.displayPointCloud
         finally:
             self.pipeline.stop()

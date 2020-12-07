@@ -226,16 +226,14 @@ class Display():
             captureHeightStart = self.captureAreaBox[0][1]
             captureWidth = self.captureAreaBox[1][0] - captureWidthStart
             captureHeight = self.captureAreaBox[1][1] - captureHeightStart
-            roiImage = image[captureWidthStart:captureWidth,captureHeightStart:captureHeight]
+            roiImage = image[captureHeightStart:captureHeightStart+captureHeight,captureWidthStart:captureWidthStart+captureWidth]
 
             r = self.VID_WIDTH / float(captureWidth)
             dim = (self.VID_WIDTH, int(captureHeight * r))
-            print(self.VID_HEIGHT-captureHeight)
-            #roiImage = cv2.resize(roiImage,dim,interpolation=cv2.INTER_AREA)
-            #roiImage = cv2.copyMakeBorder(roiImage, 0, 0, 0, 0, cv2.BORDER_CONSTANT)
-            returnImage = self.blankImage
-            returnImage[captureWidthStart:captureWidth,captureHeightStart:captureHeight] = image[captureWidthStart:captureWidth,captureHeightStart:captureHeight]
-            return returnImage
+            roiImage = cv2.resize(roiImage,dim,interpolation=cv2.INTER_AREA)
+            roiImage = cv2.copyMakeBorder(roiImage, 0, self.VID_HEIGHT - roiImage.shape[0], 0, 0, cv2.BORDER_CONSTANT,value=(0,0,0))
+            print(roiImage.shape)
+            return roiImage
         except Exception as e:
             print(e)
             return self.blankImage

@@ -263,6 +263,8 @@ class Display():
                     else:
                         self.pointCloudImage = self.blankImage
                     self.display(color_image, self.getRoiAndResize(bg_removed), self.getRoiAndResize(depth_colormap), self.getRoiAndResize(self.pointCloudImage))
+                    if self.imageCapture.getLastImageCapture() == None or self.imageCapture.getLastImageCapture() > 5:
+                        self.imageCapture.saveImage(color_image, self.getRoiAndResize(bg_removed),self.getRoiAndResize(depth_colormap),self.getRoiAndResize(self.pointCloudImage))
                 else:
                     self.display(color_image, self.blankImage, self.blankImage, self.blankImage)
 

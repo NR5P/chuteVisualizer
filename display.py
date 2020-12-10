@@ -1,6 +1,7 @@
 import pyrealsense2.pyrealsense2 as rs
 import numpy as np
 import cv2, time
+from motionDetector import MotionDetector
 
 class Display():
     def __init__(self):
@@ -10,7 +11,6 @@ class Display():
         self.captureBtnPressed = False
         self.captureAreaBox = [0] * 2
         self.triggerAreaBox = [0] * 2
-        self.lastImg = None
         self.rectangleStarted = False
         self.clipping_distance = 1 # clipping distance in meters
         self.displayPointCloud = False
@@ -18,6 +18,7 @@ class Display():
         self.pointCloudColor = True
         self.pointCloudImage = np.zeros((self.VID_HEIGHT,self.VID_WIDTH,3), np.uint8)
         self.blankImage = np.zeros((self.VID_HEIGHT,self.VID_WIDTH,3), np.uint8)
+        self.motionDetector = MotionDetector()
 
         # Create a pipeline
         self.pipeline = rs.pipeline()
@@ -86,22 +87,6 @@ class Display():
         elif event == cv2.EVENT_MOUSEMOVE and self.rectangleStarted:
             captureBox[1] = (x,y)
 
-    def detectMotion(self, currImg, lastImg):
-        if self.triggerAreaBox[0] != 0 and self.triggerAreaBox[1] != 0 and self.rectangleStarted == False:
-            xStart = self.triggerAreaBox[0][0]
-            yStart = self.triggerAreaBox[0][1]
-            xEnd = self.triggerAreaBox[1][0]
-            yEnd = self.triggerAreaBox[1][1]
-            width = xEnd - xStart
-            height = yEnd - yStart
-            triggerAreaImg = currImg[yStart:yStart + width,xStart:xStart + width]
-            lastImg = lastImg[yStart:yStart + width,xStart:xStart + width]
-            frameDelta = cv2.absdiff(triggerAreaImg, lastImg)
-            self.lastImg = currImg
-            if np.average(frameDelta) > 5:
-                return True
-        else:
-            self.lastImg = currImg
 
     def setBtnColor(self):
         half = int(self.VID_HEIGHT/2)
@@ -262,7 +247,7 @@ class Display():
 
                 depth_image = np.asanyarray(aligned_depth_frame.get_data())
                 color_image = np.asanyarray(color_frame.get_data())
-                motionDetected = self.detectMotion(color_image, self.lastImg)
+                motionDetected = self.motionDetector.detectMotion(color_image, self.triggerAreaBox, self.rectangleStarted)
                 if motionDetected == True:
                     print("movement")
 

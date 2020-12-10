@@ -231,8 +231,10 @@ class Display():
             r = self.VID_WIDTH / float(captureWidth)
             dim = (self.VID_WIDTH, int(captureHeight * r))
             roiImage = cv2.resize(roiImage,dim,interpolation=cv2.INTER_AREA)
-            roiImage = cv2.copyMakeBorder(roiImage, 0, self.VID_HEIGHT - roiImage.shape[0], 0, 0, cv2.BORDER_CONSTANT,value=(0,0,0))
-            print(roiImage.shape)
+            borderHeight = self.VID_HEIGHT - roiImage.shape[0]
+            topBorder = int(borderHeight / 2)
+            bottomBorder = borderHeight - topBorder
+            roiImage = cv2.copyMakeBorder(roiImage, topBorder, bottomBorder, 0, 0, cv2.BORDER_CONSTANT,value=(0,0,0))
             return roiImage
         except Exception as e:
             print(e)
@@ -275,7 +277,7 @@ class Display():
                     self.pointCloudImage = self.getPointCloudImage(bg_removed ,color_frame ,aligned_depth_frame, self.pointCloudImage)
                 else:
                     self.pointCloudImage = self.blankImage
-                self.display(color_image, self.getRoiAndResize(bg_removed), depth_colormap, self.pointCloudImage)
+                self.display(color_image, self.getRoiAndResize(bg_removed), self.getRoiAndResize(depth_colormap), self.getRoiAndResize(self.pointCloudImage))
 
                 key = cv2.waitKey(1)
                 # Press esc or 'q' to close the image window

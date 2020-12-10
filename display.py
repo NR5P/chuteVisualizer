@@ -2,6 +2,7 @@ import pyrealsense2.pyrealsense2 as rs
 import numpy as np
 import cv2, time
 from motionDetector import MotionDetector
+#from imageCapture import ImageCapture
 
 class Display():
     def __init__(self):
@@ -19,6 +20,7 @@ class Display():
         self.pointCloudImage = np.zeros((self.VID_HEIGHT,self.VID_WIDTH,3), np.uint8)
         self.blankImage = np.zeros((self.VID_HEIGHT,self.VID_WIDTH,3), np.uint8)
         self.motionDetector = MotionDetector()
+        #self.imageCapture = ImageCapture()
 
         # Create a pipeline
         self.pipeline = rs.pipeline()
@@ -249,20 +251,20 @@ class Display():
                 color_image = np.asanyarray(color_frame.get_data())
                 motionDetected = self.motionDetector.detectMotion(color_image, self.triggerAreaBox, self.rectangleStarted)
                 if motionDetected == True:
-                    print("movement")
+                    # Remove background - Set pixels further than clipping_distance to grey
+                    depth_image_3d = np.dstack((depth_image,depth_image,depth_image)) #depth image is 1 channel, color is 3 channels
+                    white_color = 255
+                    bg_removed = np.where((depth_image_3d > self.clipping_distance) | (depth_image_3d <= 0), white_color, color_image)
 
-                # Remove background - Set pixels further than clipping_distance to grey
-                depth_image_3d = np.dstack((depth_image,depth_image,depth_image)) #depth image is 1 channel, color is 3 channels
-                white_color = 255
-                bg_removed = np.where((depth_image_3d > self.clipping_distance) | (depth_image_3d <= 0), white_color, color_image)
-
-                depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
-                    
-                if self.displayPointCloud:
-                    self.pointCloudImage = self.getPointCloudImage(bg_removed ,color_frame ,aligned_depth_frame, self.pointCloudImage)
+                    depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
+                        
+                    if self.displayPointCloud:
+                        self.pointCloudImage = self.getPointCloudImage(bg_removed ,color_frame ,aligned_depth_frame, self.pointCloudImage)
+                    else:
+                        self.pointCloudImage = self.blankImage
+                    self.display(color_image, self.getRoiAndResize(bg_removed), self.getRoiAndResize(depth_colormap), self.getRoiAndResize(self.pointCloudImage))
                 else:
-                    self.pointCloudImage = self.blankImage
-                self.display(color_image, self.getRoiAndResize(bg_removed), self.getRoiAndResize(depth_colormap), self.getRoiAndResize(self.pointCloudImage))
+                    self.display(color_image, self.blankImage, self.blankImage, self.blankImage)
 
                 key = cv2.waitKey(1)
                 # Press esc or 'q' to close the image window

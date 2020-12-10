@@ -2,7 +2,7 @@ import pyrealsense2.pyrealsense2 as rs
 import numpy as np
 import cv2, time
 from motionDetector import MotionDetector
-#from imageCapture import ImageCapture
+from imageCapture import ImageCapture
 
 class Display():
     def __init__(self):
@@ -20,7 +20,7 @@ class Display():
         self.pointCloudImage = np.zeros((self.VID_HEIGHT,self.VID_WIDTH,3), np.uint8)
         self.blankImage = np.zeros((self.VID_HEIGHT,self.VID_WIDTH,3), np.uint8)
         self.motionDetector = MotionDetector()
-        #self.imageCapture = ImageCapture()
+        self.imageCapture = ImageCapture()
 
         # Create a pipeline
         self.pipeline = rs.pipeline()

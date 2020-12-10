@@ -4,9 +4,9 @@ import numpy as np
 class MotionDetector():
     def __init__(self):
         self.lastMotionDetected = None
-        self.motionWaitTime = 10
+        self.motionSensitivity = 10
         self.lastImg = None
-        self.sensitivity = 5
+        self.motionDelayTime = 1
 
     def detectMotion(self, currImg, triggerAreaBox, rectangleStarted):
         if triggerAreaBox[0] != 0 and triggerAreaBox[1] != 0 and rectangleStarted == False:
@@ -20,11 +20,11 @@ class MotionDetector():
             self.lastImg = self.lastImg[yStart:yStart + width,xStart:xStart + width]
             frameDelta = cv2.absdiff(triggerAreaImg, self.lastImg)
             self.lastImg = currImg
-            if np.average(frameDelta) > self.sensitivity:
-                self.lastMotionDetected = time.time()
+            if np.average(frameDelta) > self.motionSensitivity:
+                if self.lastMotionDetected == None or time.time() - self.lastMotionDetected > self.motionDelayTime:
+                    self.lastMotionDetected = time.time()
+                    print(self.lastMotionDetected)
+            if self.lastMotionDetected != None and time.time() - self.lastMotionDetected < 2:
                 return True
         else:
             self.lastImg = currImg
-
-    def getMotionWaitTime(self):
-        return self.motionWaitTime

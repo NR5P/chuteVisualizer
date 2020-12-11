@@ -23,7 +23,6 @@ class MotionDetector():
             if np.average(frameDelta) > self.motionSensitivity:
                 if self.lastMotionDetected == None or time.time() - self.lastMotionDetected > self.motionDelayTime:
                     self.lastMotionDetected = time.time()
-                    print(self.lastMotionDetected)
             if self.lastMotionDetected != None and time.time() - self.lastMotionDetected < 2:
                 return True
         else:

@@ -2,7 +2,7 @@ import time, cv2
 
 class ImageCapture():
     def __init__(self):
-        self.lastImageCapture = 0
+        self.lastImageCapture = None
 
     def saveImage(self, image, bgRemoved, depthImage, pointCloudImg):
         topImages = np.hstack((image,bgRemoved))
@@ -13,4 +13,4 @@ class ImageCapture():
 
     def getLastImageCapture(self):
         return self.lastImageCapture
-        self.lastImageCapture = 0
+        self.lastImageCapture = None

@@ -228,10 +228,25 @@ class Display():
             return self.blankImage
 
 
+    def getAverageObjectDistance(self, colorImage, depthFrame):
+        # get the x, y of everything not white in depth frame
+        indicesNotWhite = np.where(colorImage != [255,255,255])
+        coordinates = zip(indicesNotWhite[0], indicesNotWhite[1])
+        distances = []
+        for t in coordinates:
+            print(self.getDepth(depthFrame, t))
+            #distances.append(self.getDepth(depthFrame, t))
+
+        # average every x, y depth together
+
+    def getDepth(self, depthFrame, coord):
+        return depthFrame.get_distance(coord[0], coord[1])
 
     def displayLoop(self):
+        counter = 0
         try:
             while True:
+
                 # Get frameset of color and depth
                 frames = self.pipeline.wait_for_frames()
                 # frames.get_depth_frame() is a 640x360 depth image
@@ -251,10 +266,14 @@ class Display():
                 color_image = np.asanyarray(color_frame.get_data())
                 motionDetected = self.motionDetector.detectMotion(color_image, self.triggerAreaBox, self.rectangleStarted)
                 if motionDetected == True:
+                    counter += 1
                     # Remove background - Set pixels further than clipping_distance to grey
                     depth_image_3d = np.dstack((depth_image,depth_image,depth_image)) #depth image is 1 channel, color is 3 channels
                     white_color = 255
                     bg_removed = np.where((depth_image_3d > self.clipping_distance) | (depth_image_3d <= 0), white_color, color_image)
+                    if counter == 10:
+                        self.getAverageObjectDistance(bg_removed, aligned_depth_frame)
+                        counter = 0
 
                     depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
                         
@@ -263,8 +282,8 @@ class Display():
                     else:
                         self.pointCloudImage = self.blankImage
                     self.display(color_image, self.getRoiAndResize(bg_removed), self.getRoiAndResize(depth_colormap), self.getRoiAndResize(self.pointCloudImage))
-                    if self.imageCapture.getLastImageCapture() == None or self.imageCapture.getLastImageCapture() > 5:
-                        self.imageCapture.saveImage(color_image, self.getRoiAndResize(bg_removed),self.getRoiAndResize(depth_colormap),self.getRoiAndResize(self.pointCloudImage))
+                    #if self.imageCapture.getLastImageCapture() == None or self.imageCapture.getLastImageCapture() > 5:
+                    #TODO:    self.imageCapture.saveImage(color_image, self.getRoiAndResize(bg_removed),self.getRoiAndResize(depth_colormap),self.getRoiAndResize(self.pointCloudImage))
                 else:
                     self.display(color_image, self.blankImage, self.blankImage, self.blankImage)
 

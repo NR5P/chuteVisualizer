@@ -13,7 +13,7 @@ class Display():
         self.captureAreaBox = [0] * 2
         self.triggerAreaBox = [0] * 2
         self.rectangleStarted = False
-        self.clipping_distance = 1 # clipping distance in meters
+        self.clipping_distance = 3 # clipping distance in meters
         self.displayPointCloud = False
         self.pointCloudDecimate = 1
         self.pointCloudColor = True
@@ -228,22 +228,35 @@ class Display():
             return self.blankImage
 
 
-    def getAverageObjectDistance(self, colorImage, depthFrame):
-        # get the x, y of everything not white in depth frame
-        indicesNotWhite = np.where(colorImage != [255,255,255])
-        coordinates = zip(indicesNotWhite[0], indicesNotWhite[1])
-        distances = []
-        for t in coordinates:
-            print(self.getDepth(depthFrame, t))
-            #distances.append(self.getDepth(depthFrame, t))
+    def getObjectDistance(self, bgRemoved, depthFrame, triggerAreaBox):
+        """
+        checks middle pixel inside trigger box, if the pixel is not white (the object)
+        than it returns the distance
 
-        # average every x, y depth together
+        Parameters
+        ----------
+        bgRemoved : np array uint8, required
+            color image with white background
+        depthFrame : frame, required
+            depthFrame to get depth data
+        triggerAreaBox : np array[2] uint8 required
+            trigger area box start and stop points
+        
+        Return
+        ----------
+        object distance inches : float
+        """
+        boxStart = (triggerAreaBox[0][0],triggerAreaBox[0][1])
+        boxEnd = (triggerAreaBox[1][0],triggerAreaBox[1][1])
+        depthPixelX = int(((boxEnd[0] - boxStart[0]) / 2) + boxStart[0])
+        depthPixelY = int(((boxEnd[1] - boxStart[1]) / 2) + boxStart[1])
+        if bgRemoved[depthPixelY,depthPixelX,0] != 255 and bgRemoved[depthPixelY,depthPixelX,1] != 255 and bgRemoved[depthPixelY,depthPixelX,2] != 255:
+            return depthFrame.get_distance(depthPixelX, depthPixelY) * 39.37
 
     def getDepth(self, depthFrame, coord):
         return depthFrame.get_distance(coord[0], coord[1])
 
     def displayLoop(self):
-        counter = 0
         try:
             while True:
 
@@ -266,14 +279,13 @@ class Display():
                 color_image = np.asanyarray(color_frame.get_data())
                 motionDetected = self.motionDetector.detectMotion(color_image, self.triggerAreaBox, self.rectangleStarted)
                 if motionDetected == True:
-                    counter += 1
                     # Remove background - Set pixels further than clipping_distance to grey
                     depth_image_3d = np.dstack((depth_image,depth_image,depth_image)) #depth image is 1 channel, color is 3 channels
                     white_color = 255
                     bg_removed = np.where((depth_image_3d > self.clipping_distance) | (depth_image_3d <= 0), white_color, color_image)
-                    if counter == 10:
-                        self.getAverageObjectDistance(bg_removed, aligned_depth_frame)
-                        counter = 0
+
+                    distance = self.getObjectDistance(bg_removed, aligned_depth_frame, self.triggerAreaBox)
+                    print(distance)
 
                     depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
                         

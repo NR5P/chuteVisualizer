@@ -221,7 +221,7 @@ class Display():
             borderHeight = self.VID_HEIGHT - roiImage.shape[0]
             topBorder = int(borderHeight / 2)
             bottomBorder = borderHeight - topBorder
-            roiImage = cv2.copyMakeBorder(roiImage, topBorder, bottomBorder, 0, 0, cv2.BORDER_CONSTANT,value=(0,0,0))
+            roiImage = cv2.copyMakeBorder(roiImage, topBorder, bottomBorder, 0, 0, cv2.BORDER_CONSTANT,value=(255,255,255))
             return roiImage
         except Exception as e:
             print(e)
@@ -267,7 +267,7 @@ class Display():
 
         Return
         ----------
-        tupes for top(x,y) bottom(x,y) left(x,y) right(x,y)
+        tupes for top(x,y) bottom(x,y) left(x,y) right(x,y) with offset added for roi
         """
         # Load image, grayscale, Gaussian blur, threshold
         gray = cv2.cvtColor(bgRemoved, cv2.COLOR_BGR2GRAY)
@@ -285,7 +285,9 @@ class Display():
         top = tuple(c[c[:, :, 1].argmin()][0])
         bottom = tuple(c[c[:, :, 1].argmax()][0])
 
-        return (top, bottom, left, right)
+        outerPoints = (top, bottom, left, right)
+        bgRemoved = self.addOuterPoints(bgRemoved, outerPoints)
+        return (bgRemoved, outerPoints)
 
 
     def addOuterPoints(self, bgRemoved, outerPoints):
@@ -326,8 +328,9 @@ class Display():
                     bg_removed = np.where((depth_image_3d > self.clipping_distance) | (depth_image_3d <= 0), white_color, color_image)
 
                     distance = self.getObjectDistance(bg_removed, aligned_depth_frame, self.triggerAreaBox)
-                    outerPoints = self.getOuterCoordinates(bg_removed)
-                    bg_removed = self.addOuterPoints(bg_removed, outerPoints)
+                    roiBgRemoved = self.getRoiAndResize(bg_removed)
+                    roiBgRemoved, outerPoints = self.getOuterCoordinates(roiBgRemoved)
+                    roiBgRemoved = self.addOuterPoints(roiBgRemoved, outerPoints)
 
                     depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
                         
@@ -335,7 +338,7 @@ class Display():
                         self.pointCloudImage = self.getPointCloudImage(bg_removed ,color_frame ,aligned_depth_frame, self.pointCloudImage)
                     else:
                         self.pointCloudImage = self.blankImage
-                    self.display(color_image, self.getRoiAndResize(bg_removed), self.getRoiAndResize(depth_colormap), self.getRoiAndResize(self.pointCloudImage))
+                    self.display(color_image, roiBgRemoved, self.getRoiAndResize(depth_colormap), self.getRoiAndResize(self.pointCloudImage))
                     #if self.imageCapture.getLastImageCapture() == None or self.imageCapture.getLastImageCapture() > 5:
                     #TODO:    self.imageCapture.saveImage(color_image, self.getRoiAndResize(bg_removed),self.getRoiAndResize(depth_colormap),self.getRoiAndResize(self.pointCloudImage))
                 else:

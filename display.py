@@ -13,7 +13,7 @@ class Display():
         self.captureAreaBox = [0] * 2
         self.triggerAreaBox = [0] * 2
         self.rectangleStarted = False
-        self.clipping_distance = 3 # clipping distance in meters
+        self.clipping_distance = 1 # clipping distance in meters
         self.displayPointCloud = False
         self.pointCloudDecimate = 1
         self.pointCloudColor = True
@@ -256,6 +256,47 @@ class Display():
     def getDepth(self, depthFrame, coord):
         return depthFrame.get_distance(coord[0], coord[1])
 
+    def getOuterCoordinates(self, bgRemoved):
+        """
+        takes image with background removed and returns tuples for top bottom left right
+        most coordinates of image that's not white
+
+        Parameters
+        ----------
+        bgRemoved image with background removed and white
+
+        Return
+        ----------
+        tupes for top(x,y) bottom(x,y) left(x,y) right(x,y)
+        """
+        # Load image, grayscale, Gaussian blur, threshold
+        gray = cv2.cvtColor(bgRemoved, cv2.COLOR_BGR2GRAY)
+        blur = cv2.GaussianBlur(gray, (3,3), 0)
+        thresh = cv2.threshold(blur, 220, 255, cv2.THRESH_BINARY_INV)[1]
+
+        # Find contours
+        cnts = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        cnts = cnts[0] if len(cnts) == 2 else cnts[1]
+        c = max(cnts, key=cv2.contourArea)
+
+        # Obtain outer coordinates
+        left = tuple(c[c[:, :, 0].argmin()][0])
+        right = tuple(c[c[:, :, 0].argmax()][0])
+        top = tuple(c[c[:, :, 1].argmin()][0])
+        bottom = tuple(c[c[:, :, 1].argmax()][0])
+
+        return (top, bottom, left, right)
+
+
+    def addOuterPoints(self, bgRemoved, outerPoints):
+        # Draw dots onto image
+        cv2.circle(bgRemoved, outerPoints[2], 8, (0, 50, 255), -1)
+        cv2.circle(bgRemoved, outerPoints[3], 8, (0, 255, 255), -1)
+        cv2.circle(bgRemoved, outerPoints[0], 8, (255, 50, 0), -1)
+        cv2.circle(bgRemoved, outerPoints[1], 8, (255, 255, 0), -1)
+        return bgRemoved
+
+
     def displayLoop(self):
         try:
             while True:
@@ -285,7 +326,8 @@ class Display():
                     bg_removed = np.where((depth_image_3d > self.clipping_distance) | (depth_image_3d <= 0), white_color, color_image)
 
                     distance = self.getObjectDistance(bg_removed, aligned_depth_frame, self.triggerAreaBox)
-                    print(distance)
+                    outerPoints = self.getOuterCoordinates(bg_removed)
+                    bg_removed = self.addOuterPoints(bg_removed, outerPoints)
 
                     depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
                         

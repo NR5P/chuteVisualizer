@@ -330,7 +330,6 @@ class Display():
                     distance = self.getObjectDistance(bg_removed, aligned_depth_frame, self.triggerAreaBox)
                     roiBgRemoved = self.getRoiAndResize(bg_removed)
                     roiBgRemoved, outerPoints = self.getOuterCoordinates(roiBgRemoved)
-                    roiBgRemoved = self.addOuterPoints(roiBgRemoved, outerPoints)
 
                     depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
                         

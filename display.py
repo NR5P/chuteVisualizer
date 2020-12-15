@@ -3,6 +3,7 @@ import numpy as np
 import cv2, time
 from motionDetector import MotionDetector
 from imageCapture import ImageCapture
+from Models.outerPoints import OuterPoints
 
 class Display():
     def __init__(self):
@@ -285,17 +286,17 @@ class Display():
         top = tuple(c[c[:, :, 1].argmin()][0])
         bottom = tuple(c[c[:, :, 1].argmax()][0])
 
-        outerPoints = (top, bottom, left, right)
+        outerPoints = OuterPoints(top, bottom, left, right)
         bgRemoved = self.addOuterPoints(bgRemoved, outerPoints)
-        return (bgRemoved, outerPoints)
+        return bgRemoved
 
 
     def addOuterPoints(self, bgRemoved, outerPoints):
         # Draw dots onto image
-        cv2.circle(bgRemoved, outerPoints[2], 8, (0, 50, 255), -1)
-        cv2.circle(bgRemoved, outerPoints[3], 8, (0, 255, 255), -1)
-        cv2.circle(bgRemoved, outerPoints[0], 8, (255, 50, 0), -1)
-        cv2.circle(bgRemoved, outerPoints[1], 8, (255, 255, 0), -1)
+        cv2.circle(bgRemoved, outerPoints.left, 8, (0, 50, 255), -1)
+        cv2.circle(bgRemoved, outerPoints.right, 8, (0, 255, 255), -1)
+        cv2.circle(bgRemoved, outerPoints.top, 8, (255, 50, 0), -1)
+        cv2.circle(bgRemoved, outerPoints.bottom, 8, (255, 255, 0), -1)
         return bgRemoved
 
 
@@ -329,7 +330,7 @@ class Display():
 
                     distance = self.getObjectDistance(bg_removed, aligned_depth_frame, self.triggerAreaBox)
                     roiBgRemoved = self.getRoiAndResize(bg_removed)
-                    roiBgRemoved, outerPoints = self.getOuterCoordinates(roiBgRemoved)
+                    roiBgRemoved = self.getOuterCoordinates(roiBgRemoved)
 
                     depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
                         

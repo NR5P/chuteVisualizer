@@ -4,6 +4,8 @@ import cv2, time
 from motionDetector import MotionDetector
 from imageCapture import ImageCapture
 from Models.outerPoints import OuterPoints
+from Models.dimensions import Dimensions
+from measurement import Measurement
 
 class Display():
     def __init__(self):
@@ -22,6 +24,7 @@ class Display():
         self.blankImage = np.zeros((self.VID_HEIGHT,self.VID_WIDTH,3), np.uint8)
         self.motionDetector = MotionDetector()
         self.imageCapture = ImageCapture()
+        self.measurement = Measurement()
 
         # Create a pipeline
         self.pipeline = rs.pipeline()
@@ -290,7 +293,6 @@ class Display():
         bgRemoved = self.addOuterPoints(bgRemoved, outerPoints)
         return (bgRemoved, outerPoints)
 
-
     def addOuterPoints(self, bgRemoved, outerPoints):
         # Draw dots onto image
         cv2.circle(bgRemoved, outerPoints.left, 8, (0, 50, 255), -1)
@@ -299,6 +301,8 @@ class Display():
         cv2.circle(bgRemoved, outerPoints.bottom, 8, (255, 255, 0), -1)
         return bgRemoved
 
+    def addDimensionText(self, bgRemoved, dimensions):
+        pass
 
     def displayLoop(self):
         try:
@@ -325,12 +329,14 @@ class Display():
                 if motionDetected == True:
                     # Remove background - Set pixels further than clipping_distance to grey
                     depth_image_3d = np.dstack((depth_image,depth_image,depth_image)) #depth image is 1 channel, color is 3 channels
-                    white_color = 255
-                    bg_removed = np.where((depth_image_3d > self.clipping_distance) | (depth_image_3d <= 0), white_color, color_image)
+                    bg_removed = np.where((depth_image_3d > self.clipping_distance) | (depth_image_3d <= 0), 255, color_image)
 
                     distance = self.getObjectDistance(bg_removed, aligned_depth_frame, self.triggerAreaBox)
                     roiBgRemoved = self.getRoiAndResize(bg_removed)
                     roiBgRemoved, outerPoints = self.getOuterCoordinates(roiBgRemoved)
+                    self.measurement.setOuterPoints(outerPoints, distance)
+                    dimensions = self.measurement.getDimensions()
+                    self.addDimensionText(roiBgRemoved, dimensions)
 
                     depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
                         

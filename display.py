@@ -4,6 +4,9 @@ import cv2, time
 from motionDetector import MotionDetector
 from imageCapture import ImageCapture
 from Models.outerPoints import OuterPoints
+from Models.dimensions import Dimensions
+from measurement import Measurement
+from typing import List, Tuple
 
 class Display():
     def __init__(self):
@@ -22,6 +25,7 @@ class Display():
         self.blankImage = np.zeros((self.VID_HEIGHT,self.VID_WIDTH,3), np.uint8)
         self.motionDetector = MotionDetector()
         self.imageCapture = ImageCapture()
+        self.measurement = Measurement()
 
         # Create a pipeline
         self.pipeline = rs.pipeline()
@@ -68,7 +72,7 @@ class Display():
         self.buttonImg[...] = 255
         self.setBtnColor()
 
-    def process_click(self, event, x, y, flags, params):
+    def process_click(self, event: int, x: int, y: int, flags: int, params):
         if x > self.VID_WIDTH and y < self.VID_HEIGHT / 2 and event == cv2.EVENT_LBUTTONDOWN:
             self.handleCaptureAreaButton()
         elif x > self.VID_WIDTH and y > self.VID_HEIGHT / 2 and event == cv2.EVENT_LBUTTONDOWN:
@@ -78,7 +82,7 @@ class Display():
         elif x < self.VID_WIDTH and self.captureBtnPressed:
             self.handleRectangleDraw(event, x, y, self.captureAreaBox)
 
-    def handleRectangleDraw(self, event, x, y, captureBox):
+    def handleRectangleDraw(self, event: int, x: int, y: int, captureBox: List[Tuple[int, int]]):
         if event == cv2.EVENT_LBUTTONDOWN:
             self.rectangleStarted = True
             captureBox[0] = (x,y)
@@ -121,10 +125,8 @@ class Display():
             self.triggerAreaBox = [0] * 2
         self.setBtnColor()
 
-    def handleButtonPress(self, button):
-        pass
-
-    def preProcessing(self, img):
+    def preProcessing(self, img: np.ndarray) -> np.ndarray:
+        print(type(img))
         gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         blured_img = cv2.GaussianBlur(gray_img,(5,5),1)
         canny_img = cv2.Canny(blured_img,200,200)
@@ -134,7 +136,7 @@ class Display():
 
         return preproc_img
 
-    def display(self, image, bgRemoved, depthImage, pointCloudImg):
+    def display(self, image: np.ndarray, bgRemoved: np.ndarray, depthImage: np.ndarray, pointCloudImg: np.ndarray):
         blankImage = np.zeros((self.VID_HEIGHT,self.VID_WIDTH,3), np.uint8)
         blankImageButtons = np.zeros((self.VID_HEIGHT,200,3), np.uint8)
         imgWithButtons = np.hstack((image,bgRemoved,self.buttonImg))
@@ -148,7 +150,7 @@ class Display():
         cv2.imshow("chute", entireScreen)
 
     
-    def project(self,v):
+    def project(self,v: np.ndarray) -> np.ndarray:
         """project 3d vector array to 2d"""
         h, w = self.pointCloudImage.shape[:2]
         view_aspect = float(h)/w
@@ -164,7 +166,7 @@ class Display():
         return proj
 
 
-    def pointcloud(self, out, verts, texcoords, color):
+    def pointcloud(self, out: np.ndarray, verts: np.ndarray, texcoords: np.ndarray, color: np.ndarray):
         proj = self.project(verts)
 
         h, w = out.shape[:2]
@@ -188,7 +190,7 @@ class Display():
         out[i[m], j[m]] = color[u[m], v[m]]
 
 
-    def getPointCloudImage(self,colorImage,colorFrame,depthFrame,pointCloudImage):
+    def getPointCloudImage(self,colorImage: np.ndarray,colorFrame: np.ndarray,depthFrame: np.ndarray,pointCloudImage: np.ndarray) -> np.ndarray:
         depth_colormap = np.asanyarray(
             self.colorizer.colorize(depthFrame).get_data())
         if self.pointCloudColor:
@@ -209,7 +211,7 @@ class Display():
 
         return pointCloudImage
         
-    def getRoiAndResize(self, image):            
+    def getRoiAndResize(self, image: np.ndarray) -> np.ndarray:            
         try:
             captureWidthStart = self.captureAreaBox[0][0]
             captureHeightStart = self.captureAreaBox[0][1]
@@ -230,7 +232,7 @@ class Display():
             return self.blankImage
 
 
-    def getObjectDistance(self, bgRemoved, depthFrame, triggerAreaBox):
+    def getObjectDistance(self, bgRemoved: np.ndarray, depthFrame: np.ndarray, triggerAreaBox: List[Tuple[int, int]]) -> float:
         """
         checks middle pixel inside trigger box, if the pixel is not white (the object)
         than it returns the distance
@@ -255,10 +257,11 @@ class Display():
         if bgRemoved[depthPixelY,depthPixelX,0] != 255 and bgRemoved[depthPixelY,depthPixelX,1] != 255 and bgRemoved[depthPixelY,depthPixelX,2] != 255:
             return depthFrame.get_distance(depthPixelX, depthPixelY) * 39.37
 
-    def getDepth(self, depthFrame, coord):
+    def getDepth(self, depthFrame: np.ndarray, coord: Tuple[int, int]) -> float:
+        print(type(coord))
         return depthFrame.get_distance(coord[0], coord[1])
 
-    def getOuterCoordinates(self, bgRemoved):
+    def getOuterCoordinates(self, bgRemoved: np.ndarray) -> Tuple[np.ndarray, OuterPoints]:
         """
         takes image with background removed and returns tuples for top bottom left right
         most coordinates of image that's not white
@@ -291,8 +294,7 @@ class Display():
         bgRemoved = self.addOuterPoints(bgRemoved, outerPoints)
         return (bgRemoved, outerPoints)
 
-
-    def addOuterPoints(self, bgRemoved, outerPoints):
+    def addOuterPoints(self, bgRemoved: np.ndarray, outerPoints: OuterPoints) -> np.ndarray:
         # Draw dots onto image
         cv2.circle(bgRemoved, outerPoints.left, 8, (0, 50, 255), -1)
         cv2.circle(bgRemoved, outerPoints.right, 8, (0, 255, 255), -1)
@@ -300,6 +302,8 @@ class Display():
         cv2.circle(bgRemoved, outerPoints.bottom, 8, (255, 255, 0), -1)
         return bgRemoved
 
+    def addDimensionText(self, bgRemoved: np.ndarray, dimensions: Dimensions):
+        pass
 
     def displayLoop(self):
         try:
@@ -326,12 +330,14 @@ class Display():
                 if motionDetected == True:
                     # Remove background - Set pixels further than clipping_distance to grey
                     depth_image_3d = np.dstack((depth_image,depth_image,depth_image)) #depth image is 1 channel, color is 3 channels
-                    white_color = 255
-                    bg_removed = np.where((depth_image_3d > self.clipping_distance) | (depth_image_3d <= 0), white_color, color_image)
+                    bg_removed = np.where((depth_image_3d > self.clipping_distance) | (depth_image_3d <= 0), 255, color_image)
 
                     distance = self.getObjectDistance(bg_removed, aligned_depth_frame, self.triggerAreaBox)
                     roiBgRemoved = self.getRoiAndResize(bg_removed)
                     roiBgRemoved, outerPoints = self.getOuterCoordinates(roiBgRemoved)
+                    self.measurement.setOuterPoints(outerPoints, distance)
+                    dimensions = self.measurement.getDimensions()
+                    self.addDimensionText(roiBgRemoved, dimensions)
 
                     depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
                         

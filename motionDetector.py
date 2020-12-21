@@ -1,5 +1,6 @@
 import time, cv2
 import numpy as np
+from typing import List, Tuple
 
 class MotionDetector():
     def __init__(self):
@@ -8,7 +9,8 @@ class MotionDetector():
         self.lastImg = None
         self.motionDelayTime = 1
 
-    def detectMotion(self, currImg, triggerAreaBox, rectangleStarted):
+    def detectMotion(self, currImg: np.ndarray, triggerAreaBox: List[Tuple[int, int]], rectangleStarted: bool) -> bool:
+        print(type(triggerAreaBox))
         if triggerAreaBox[0] != 0 and triggerAreaBox[1] != 0 and rectangleStarted == False:
             xStart = triggerAreaBox[0][0]
             yStart = triggerAreaBox[0][1]
@@ -27,3 +29,4 @@ class MotionDetector():
                 return True
         else:
             self.lastImg = currImg
+        return False

@@ -334,7 +334,6 @@ class Display():
                 if motionDetected == True:
                     # Remove background - Set pixels further than clipping_distance to grey
                     depth_image_3d = np.dstack((depth_image,depth_image,depth_image)) #depth image is 1 channel, color is 3 channels
-                    print(self.clipping_distance)
                     bg_removed = np.where((depth_image_3d > self.clipping_distance) | (depth_image_3d <= 0), 255, color_image)
 
                     distance = self.getObjectDistance(bg_removed, aligned_depth_frame, self.triggerAreaBox)

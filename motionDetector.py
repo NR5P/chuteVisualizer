@@ -10,7 +10,6 @@ class MotionDetector():
         self.motionDelayTime = 1
 
     def detectMotion(self, currImg: np.ndarray, triggerAreaBox: List[Tuple[int, int]], rectangleStarted: bool) -> bool:
-        print(type(triggerAreaBox))
         if triggerAreaBox[0] != 0 and triggerAreaBox[1] != 0 and rectangleStarted == False:
             xStart = triggerAreaBox[0][0]
             yStart = triggerAreaBox[0][1]

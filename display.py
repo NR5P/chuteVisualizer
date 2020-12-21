@@ -41,10 +41,10 @@ class Display():
 
         # Getting the depth sensor's depth scale (see rs-align example for explanation)
         depth_sensor = profile.get_device().first_depth_sensor()
-        depth_scale = depth_sensor.get_depth_scale()
+        self.depth_scale = depth_sensor.get_depth_scale()
 
         # remove objects over certain distance
-        self.clipping_distance = self.changeClippingDistance(self.clippingDistanceFeet) / depth_scale
+        self.changeClippingDistance(self.clippingDistanceFeet)
 
         # Create an align object, align images
         align_to = rs.stream.color
@@ -53,6 +53,7 @@ class Display():
         self.createButtons()
 
         cv2.namedWindow("chute", cv2.WINDOW_AUTOSIZE)
+        cv2.createTrackbar("chute", "chute", self.clippingDistanceFeet, 30, self.changeClippingDistance)
         cv2.setMouseCallback("chute",self.process_click)
 
         # Get stream profile and camera intrinsics
@@ -95,9 +96,8 @@ class Display():
         elif event == cv2.EVENT_MOUSEMOVE and self.rectangleStarted:
             captureBox[1] = (x,y)
 
-    def changeClippingDistance(self, clippingDistanceFeet: int) -> float:
-        return clippingDistanceFeet * .3048
-
+    def changeClippingDistance(self, clippingDistanceFeet: int):
+        self.clipping_distance = (clippingDistanceFeet * .3048) / self.depth_scale
 
     def setBtnColor(self):
         half = int(self.VID_HEIGHT/2)
@@ -145,7 +145,7 @@ class Display():
         imgWithButtons = np.hstack((image,bgRemoved,self.buttonImg))
         bottomImages = np.hstack((depthImage,pointCloudImg,blankImageButtons))
         entireScreen = np.vstack((imgWithButtons, bottomImages))
-        entireScreen = cv2.resize(entireScreen,(int(self.VID_WIDTH*1.5),int(self.VID_HEIGHT*1.5)),interpolation=cv2.INTER_AREA)
+        entireScreen = cv2.resize(entireScreen,(int(self.VID_WIDTH*1.3),int(self.VID_HEIGHT*1.3)),interpolation=cv2.INTER_AREA)
         if self.captureAreaBox[0] != 0 and self.captureAreaBox[1] != 0:
             cv2.rectangle(entireScreen, self.captureAreaBox[0], self.captureAreaBox[1], (0,255,0), thickness=1) 
         if self.triggerAreaBox[0] != 0 and self.triggerAreaBox[1] != 0:
@@ -334,6 +334,7 @@ class Display():
                 if motionDetected == True:
                     # Remove background - Set pixels further than clipping_distance to grey
                     depth_image_3d = np.dstack((depth_image,depth_image,depth_image)) #depth image is 1 channel, color is 3 channels
+                    print(self.clipping_distance)
                     bg_removed = np.where((depth_image_3d > self.clipping_distance) | (depth_image_3d <= 0), 255, color_image)
 
                     distance = self.getObjectDistance(bg_removed, aligned_depth_frame, self.triggerAreaBox)

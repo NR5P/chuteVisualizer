@@ -126,7 +126,6 @@ class Display():
         self.setBtnColor()
 
     def preProcessing(self, img: np.ndarray) -> np.ndarray:
-        print(type(img))
         gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         blured_img = cv2.GaussianBlur(gray_img,(5,5),1)
         canny_img = cv2.Canny(blured_img,200,200)
@@ -258,7 +257,6 @@ class Display():
             return depthFrame.get_distance(depthPixelX, depthPixelY) * 39.37
 
     def getDepth(self, depthFrame: np.ndarray, coord: Tuple[int, int]) -> float:
-        print(type(coord))
         return depthFrame.get_distance(coord[0], coord[1])
 
     def getOuterCoordinates(self, bgRemoved: np.ndarray) -> Tuple[np.ndarray, OuterPoints]:
@@ -302,8 +300,10 @@ class Display():
         cv2.circle(bgRemoved, outerPoints.bottom, 8, (255, 255, 0), -1)
         return bgRemoved
 
-    def addDimensionText(self, bgRemoved: np.ndarray, dimensions: Dimensions):
-        pass
+    def addDimensionText(self, colorImage: np.ndarray, dimensions: Dimensions, outerPoints: OuterPoints) -> np.ndarray:
+        cv2.putText(colorImage, 'width: ' + str(dimensions.width),(25,25),cv2.FONT_HERSHEY_PLAIN, 2,(255,255,255),3)
+        cv2.putText(colorImage, 'height: ' + str(dimensions.height),(25,60),cv2.FONT_HERSHEY_PLAIN, 2,(255,255,255),3)
+        return colorImage
 
     def displayLoop(self):
         try:
@@ -335,9 +335,10 @@ class Display():
                     distance = self.getObjectDistance(bg_removed, aligned_depth_frame, self.triggerAreaBox)
                     roiBgRemoved = self.getRoiAndResize(bg_removed)
                     roiBgRemoved, outerPoints = self.getOuterCoordinates(roiBgRemoved)
-                    self.measurement.setOuterPoints(outerPoints, distance)
-                    dimensions = self.measurement.getDimensions()
-                    self.addDimensionText(roiBgRemoved, dimensions)
+                    if distance != None:
+                        self.measurement.setOuterPoints(outerPoints, distance)
+                        dimensions = self.measurement.getDimensions()
+                        color_image = self.addDimensionText(color_image, dimensions, outerPoints)
 
                     depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
                         

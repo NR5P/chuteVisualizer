@@ -140,6 +140,7 @@ class Display():
         imgWithButtons = np.hstack((image,bgRemoved,self.buttonImg))
         bottomImages = np.hstack((depthImage,pointCloudImg,blankImageButtons))
         entireScreen = np.vstack((imgWithButtons, bottomImages))
+        entireScreen = cv2.resize(entireScreen,(int(self.VID_WIDTH*1.5),int(self.VID_HEIGHT*1.5)),interpolation=cv2.INTER_AREA)
         if self.captureAreaBox[0] != 0 and self.captureAreaBox[1] != 0:
             cv2.rectangle(entireScreen, self.captureAreaBox[0], self.captureAreaBox[1], (0,255,0), thickness=1) 
         if self.triggerAreaBox[0] != 0 and self.triggerAreaBox[1] != 0:

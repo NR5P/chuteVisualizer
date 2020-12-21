@@ -18,6 +18,7 @@ class Display():
         self.triggerAreaBox = [0] * 2
         self.rectangleStarted = False
         self.clipping_distance = 1 # clipping distance in meters
+        self.clippingDistanceFeet = 2
         self.displayPointCloud = False
         self.pointCloudDecimate = 1
         self.pointCloudColor = True
@@ -43,7 +44,7 @@ class Display():
         depth_scale = depth_sensor.get_depth_scale()
 
         # remove objects over certain distance
-        self.clipping_distance = self.clipping_distance / depth_scale
+        self.clipping_distance = self.changeClippingDistance(self.clippingDistanceFeet) / depth_scale
 
         # Create an align object, align images
         align_to = rs.stream.color
@@ -93,6 +94,9 @@ class Display():
             captureBox[1] = (x,y)
         elif event == cv2.EVENT_MOUSEMOVE and self.rectangleStarted:
             captureBox[1] = (x,y)
+
+    def changeClippingDistance(self, clippingDistanceFeet: int) -> float:
+        return clippingDistanceFeet * .3048
 
 
     def setBtnColor(self):

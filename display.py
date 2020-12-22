@@ -284,6 +284,8 @@ class Display():
         # Find contours
         cnts = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         cnts = cnts[0] if len(cnts) == 2 else cnts[1]
+        if len(cnts) == 0:
+            return (bgRemoved, None)
         c = max(cnts, key=cv2.contourArea)
 
         # Obtain outer coordinates
@@ -339,7 +341,7 @@ class Display():
                     distance = self.getObjectDistance(bg_removed, aligned_depth_frame, self.triggerAreaBox)
                     roiBgRemoved = self.getRoiAndResize(bg_removed)
                     roiBgRemoved, outerPoints = self.getOuterCoordinates(roiBgRemoved)
-                    if distance != None:
+                    if distance != None and outerPoints != None:
                         self.measurement.setOuterPoints(outerPoints, distance)
                         dimensions = self.measurement.getDimensions()
                         color_image = self.addDimensionText(color_image, dimensions, outerPoints)

@@ -93,6 +93,12 @@ class Display():
             self.triggerBtnPressed = self.captureBtnPressed = False
             self.setBtnColor()
             captureBox[1] = (x,y)
+
+            # if the box was drawn from right to left swap the coordinates
+            if captureBox[0][0] > captureBox[1][0]:
+                temp = captureBox[0]
+                captureBox[0] = captureBox[1]
+                captureBox[1] = temp
         elif event == cv2.EVENT_MOUSEMOVE and self.rectangleStarted:
             captureBox[1] = (x,y)
 
